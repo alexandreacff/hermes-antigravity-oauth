@@ -137,10 +137,12 @@ class AntigravityOAuthProfile(ProviderProfile):
         """
         try:
             from .client import resolve_agy_command
+            from .process import _no_window
         except ImportError:
             # Loaded outside a package (e.g. a flat source tree under test):
             # the absolute name is the same module.
             from client import resolve_agy_command
+            from process import _no_window
 
         try:
             cmd = resolve_agy_command()
@@ -150,6 +152,7 @@ class AntigravityOAuthProfile(ProviderProfile):
                 text=True,
                 stdin=subprocess.DEVNULL,
                 timeout=timeout,
+                **_no_window(),
             )
             if res.returncode != 0:
                 logger.debug("Antigravity model discovery exited %s", res.returncode)

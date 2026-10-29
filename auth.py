@@ -16,9 +16,9 @@ import tempfile
 from typing import Any
 
 try:
-    from .process import is_authenticated, resolve_agy_command
+    from .process import _no_window, is_authenticated, resolve_agy_command
 except ImportError:  # flat source tree under test
-    from process import is_authenticated, resolve_agy_command
+    from process import _no_window, is_authenticated, resolve_agy_command
 
 PROVIDER_ID = "antigravity-oauth"
 INSTALL_URL = "https://antigravity.google/cli"
@@ -41,7 +41,7 @@ def verify_session(agy: str, timeout: float = _VERIFY_TIMEOUT_S) -> tuple[bool, 
     """Live check: `agy models` only succeeds for a signed-in account. Returns (ok, model_ids, detail)."""
     try:
         res = subprocess.run([agy, "models"], capture_output=True, text=True, timeout=timeout,
-                             stdin=subprocess.DEVNULL, check=False)
+                             stdin=subprocess.DEVNULL, check=False, **_no_window())
     except subprocess.TimeoutExpired:
         return False, [], f"`agy models` timed out after {timeout:.0f}s"
     except OSError as exc:

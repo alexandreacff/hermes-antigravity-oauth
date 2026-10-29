@@ -47,10 +47,26 @@ def _is_existing_file(path: str | Path) -> bool:
         return False
 
 
+# Windows: console programs (agy.exe, cmdkey, taskkill) spawned from a parent
+# without a console (gateway, desktop app) get a fresh console window that
+# flashes on screen and steals focus. CREATE_NO_WINDOW suppresses it; pipes
+# are unaffected.
+_CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+
+
+def _no_window() -> dict[str, Any]:
+    """subprocess kwargs that keep helper commands from opening a console window on Windows."""
+    if os.name == "nt":
+        return {"creationflags": _CREATE_NO_WINDOW}
+    return {}
+
+
 def _own_process_group() -> dict[str, Any]:
     """Popen kwargs that put native (and any child processes it spawns) in a group we can kill cleanly."""
     if os.name == "nt":
-        return {"creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)}
+        return {
+            "creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200) | _CREATE_NO_WINDOW
+        }
     return {"start_new_session": True}
 
 
@@ -65,6 +81,7 @@ def _kill_process_tree(proc: subprocess.Popen) -> None:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 check=False,
+                **_no_window(),
             )
         return
     try:
@@ -157,7 +174,7 @@ def _windows_credential_present() -> bool:
     """
     try:
         # Bytes, not text: cmdkey prints in the console/OEM code page, so nothing is decoded.
-        out = subprocess.run(["cmdkey", "/list:gemini:antigravity"], capture_output=True, timeout=3, check=False)
+        out = subprocess.run(["cmdkey", "/list:gemini:antigravity"], capture_output=True, timeout=3, check=False, **_no_window())
     except (OSError, subprocess.SubprocessError):  # missing cmdkey, TimeoutExpired
         return False
     # Fail closed on a failing cmdkey; the listed target keeps the casing it was stored with.

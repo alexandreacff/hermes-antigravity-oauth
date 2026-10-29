@@ -1891,7 +1891,8 @@ class AntigravityPluginTests(unittest.TestCase):
         from client import _own_process_group
         with patch("os.name", "nt"):
             flags = _own_process_group()
-            self.assertEqual(flags, {"creationflags": 0x00000200})
+            # CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW (no flashing console)
+            self.assertEqual(flags, {"creationflags": 0x00000200 | 0x08000000})
         with patch("os.name", "posix"):
             flags = _own_process_group()
             self.assertEqual(flags, {"start_new_session": True})
@@ -1909,6 +1910,7 @@ class AntigravityPluginTests(unittest.TestCase):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 check=False,
+                creationflags=0x08000000,
             )
 
     def test_child_env_windows_userprofile(self):
