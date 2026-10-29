@@ -36,6 +36,17 @@ class TestNoConsoleWindow(unittest.TestCase):
             self.assertTrue(process._windows_credential_present())
         self.assertEqual(calls[0].get("creationflags"), NO_WINDOW)
 
+    def test_child_env_disables_agy_auto_updater(self):
+        with mock.patch.dict(process.os.environ, {}, clear=False):
+            process.os.environ.pop("AGY_CLI_DISABLE_AUTO_UPDATE", None)
+            env = process.build_child_env("/tmp/iso")
+        self.assertEqual(env["AGY_CLI_DISABLE_AUTO_UPDATE"], "true")
+
+    def test_child_env_respects_user_override(self):
+        with mock.patch.dict(process.os.environ, {"AGY_CLI_DISABLE_AUTO_UPDATE": "false"}):
+            env = process.build_child_env("/tmp/iso")
+        self.assertEqual(env["AGY_CLI_DISABLE_AUTO_UPDATE"], "false")
+
 
 if __name__ == "__main__":
     unittest.main()

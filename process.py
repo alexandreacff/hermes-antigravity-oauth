@@ -622,6 +622,13 @@ def build_child_env(isolated_home: Path | str) -> dict[str, str]:
     env["USERPROFILE"] = home_str
     if "HOMEPATH" in env:
         env["HOMEPATH"] = home_str
+    # agy's in-process auto-updater spawns a detached `agy --bg-updater`, which in
+    # turn runs `agy --version` WITHOUT hiding its console: on Windows that opens a
+    # visible terminal window on every worker spawn, which CREATE_NO_WINDOW on our
+    # side cannot reach (the updater is detached from the hidden console). Hermes
+    # drives agy headless, so skip self-updates here (usage.py already does);
+    # update with `agy update`. A user who sets the variable keeps their value.
+    env.setdefault("AGY_CLI_DISABLE_AUTO_UPDATE", "true")
     return env
 
 
